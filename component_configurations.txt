@@ -1,0 +1,45 @@
+Component Name,Type,Version,Dependencies,Configuration Store,Endpoints,Health Checks,Scaling Config,Backup Config,Security Features,Monitoring Integration
+
+# Development Environment
+JupyterHub,Service,"3.0.0","Kubernetes, OAuth, GCS","ConfigMap, Secrets","https://jupyter.domain/hub","HTTP/8081,TCP/8081","1-10 replicas","Daily PVC backup","OIDC, RBAC, TLS","Prometheus metrics"
+VSCode Server,Service,"4.0.0","JupyterHub, GCS",ConfigMap,"https://jupyter.domain/vscode","HTTP/8080",None,"GCS versioning","Pod isolation, RBAC","Resource monitoring"
+Terminal Service,Service,"2.0.0","JupyterHub",ConfigMap,"https://jupyter.domain/terminal","HTTP/8082",None,"Command history","Pod isolation","Basic metrics"
+
+# ML Platform
+MLflow,Service,"2.5.0","PostgreSQL, GCS","ConfigMap, Secrets","https://mlflow.domain","HTTP/5000,TCP/5000","1-3 replicas","Daily DB backup","IAM, TLS","Custom metrics"
+Feature Store,Service,"1.2.0","Redis, Cloud Datastore","ConfigMap, Secrets","https://features.domain","HTTP/8666,TCP/8666","2-5 replicas","Datastore backup","IAM, Pod security","Latency metrics"
+Model Registry,Service,"2.0.0","GCS, PostgreSQL",ConfigMap,"https://registry.domain","HTTP/8000","1-2 replicas","GCS versioning","RBAC, TLS","Version tracking"
+
+# Workflow Management
+Airflow,Service,"2.7.0","PostgreSQL, Redis","ConfigMap, Secrets","https://airflow.domain","HTTP/8080,TCP/8080","1-5 workers","Daily DB backup","IAM, Pod security","DAG metrics"
+Scheduler,Service,"1.0.0","Redis",ConfigMap,Internal,"TCP/6379","1-2 replicas","Redis persistence","Pod isolation","Queue metrics"
+Worker Pool,Service,"1.0.0","Redis, GCS",ConfigMap,Internal,"TCP/7000","3-10 replicas",None,"Pod security","Worker metrics"
+
+# Storage Services
+GCS Integration,Integration,"Latest","IAM",ConfigMap,"gs://bucket-name",None,None,"Object versioning","CMEK, IAM","Usage metrics"
+PostgreSQL,Database,"14.0","Cloud SQL Auth Proxy","Secrets, ConfigMap","TCP/5432",None,"Auto-scaling","Daily snapshots","IAM, TLS","DB metrics"
+Redis Cache,Cache,"7.0","None",ConfigMap,"TCP/6379",None,"Memory-based","RDB snapshots","Pod isolation","Cache metrics"
+
+# Monitoring Stack
+Prometheus,Service,"2.45.0","GCS","ConfigMap, Secrets","http://prometheus:9090","HTTP/9090","1-2 replicas","Metric retention","RBAC, TLS","Self-monitoring"
+Grafana,Service,"10.0.0","PostgreSQL","ConfigMap, Secrets","https://grafana.domain","HTTP/3000","1 replica","Dashboard backup","OAuth, TLS","Usage metrics"
+Alert Manager,Service,"0.25.0","SMTP","ConfigMap, Secrets","http://alertmanager:9093","HTTP/9093","1 replica",None,"Pod security","Alert metrics"
+
+# Security Components
+OAuth Provider,Service,"2.0.0","None",Secrets,"https://auth.domain","HTTP/443",None,None,"TLS, Token encryption","Auth metrics"
+Cert Manager,Service,"1.12.0","None",ConfigMap,"Internal","HTTP/9402","1 replica",None,"Pod security","Cert metrics"
+Network Policy,Config,"1.0.0","None",ConfigMap,None,None,None,None,"Pod isolation","Policy metrics"
+
+# Cloud Components (GCP)
+GKE Cluster,Cloud Service,"1.27","VPC, IAM","GCP Config","Private endpoint","Health checks enabled","Node auto-scaling","Cluster backup","Private cluster, Workload Identity","GCP monitoring"
+Cloud SQL,Cloud Service,"PostgreSQL 14","VPC, IAM","GCP Config","Private IP","Automated checks","Compute auto-scaling","Automated backups","CMEK, IAM, Private Service Access","Cloud monitoring"
+Cloud Storage,Cloud Service,"N/A","IAM","GCP Config","gs://","Bucket checks","Auto-scaling storage","Object versioning","CMEK, IAM, VPC Service Controls","Storage metrics"
+Cloud KMS,Cloud Service,"N/A","IAM","GCP Config","Private endpoint",None,"Auto-scaling","Key versioning","HSM, IAM","Key operation metrics"
+Cloud Datastore,Cloud Service,"N/A","VPC, IAM","GCP Config","Private endpoint","Health checks","Auto-scaling","Managed backups","IAM, VPC Service Controls","Datastore metrics"
+Cloud Load Balancer,Cloud Service,"N/A","VPC","GCP Config","Public IP","Health probes","Auto-scaling","None","Cloud Armor, SSL/TLS","Load balancer metrics"
+Cloud NAT,Cloud Service,"N/A","VPC","GCP Config","NAT IPs","Connection draining","Auto-scaling IPs","None","Private egress","NAT metrics"
+VPC Network,Cloud Service,"N/A","None","GCP Config","RFC1918 ranges","Network monitoring","Subnet auto-expand","Flow logs","Firewall rules, Service Controls","Network metrics"
+Cloud Armor,Cloud Service,"N/A","Load Balancer","GCP Config","WAF rules","Rule validation","Auto-scaling","Rule backups","DDoS protection, WAF","Security metrics"
+Secret Manager,Cloud Service,"N/A","IAM","GCP Config","Private endpoint","Secret validation","Auto-scaling","Secret versions","CMEK, IAM","Secret access metrics"
+Cloud DNS,Cloud Service,"N/A","VPC","GCP Config","DNS endpoints","Health checks","Auto-scaling","Zone backups","IAM, DNSSEC","DNS metrics"
+Cloud Logging,Cloud Service,"N/A","IAM","GCP Config","Private endpoint","Ingestion checks","Auto-scaling storage","Log archives","IAM, CMEK","Logging metrics" 

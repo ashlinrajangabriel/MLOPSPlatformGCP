@@ -1,0 +1,5 @@
+bind-addr: 0.0.0.0:8080
+auth: none
+cert: false
+user-data-dir: "/root/.config/code-server/data"
+extensions-dir: "/root/.config/code-server/extensions"

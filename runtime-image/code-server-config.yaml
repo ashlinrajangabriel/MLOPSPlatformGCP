@@ -1,0 +1,6 @@
+bind-addr: 0.0.0.0:8080
+auth: none
+cert: false
+user-data-dir: /home/jovyan/workspace
+extensions-dir: /home/jovyan/.local/share/code-server/extensions
+disable-telemetry: true 

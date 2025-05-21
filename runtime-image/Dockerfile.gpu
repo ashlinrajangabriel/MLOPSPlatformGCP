@@ -1,0 +1,71 @@
+# Use NVIDIA CUDA base image
+FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    gnupg \
+    jq \
+    python3 \
+    python3-pip \
+    sudo \
+    vim \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create jovyan user
+RUN useradd -m -s /bin/bash -N -u 1000 jovyan && \
+    echo "jovyan ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/jovyan && \
+    chmod 0440 /etc/sudoers.d/jovyan
+
+# Install code-server (VSCode)
+RUN curl -fsSL https://code-server.dev/install.sh | sh
+
+# Install Python packages with GPU support
+COPY requirements.gpu.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install CUDA development tools
+RUN apt-get update && apt-get install -y \
+    cuda-command-line-tools-11-8 \
+    cuda-nvcc-11-8 \
+    cuda-cupti-11-8 \
+    cuda-nvprune-11-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install VSCode extensions
+USER jovyan
+RUN code-server --install-extension ms-python.python \
+    && code-server --install-extension ms-toolsai.jupyter \
+    && code-server --install-extension ms-azuretools.vscode-docker \
+    && code-server --install-extension eamodio.gitlens \
+    && code-server --install-extension esbenp.prettier-vscode
+
+# Configure code-server
+COPY code-server-config.yaml /home/jovyan/.config/code-server/config.yaml
+USER root
+RUN chown -R jovyan:jovyan /home/jovyan/.config
+
+# Configure Jupyter
+COPY jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
+RUN mkdir -p /etc/jupyter && chown -R jovyan:jovyan /etc/jupyter
+
+# Switch back to jovyan user
+USER jovyan
+WORKDIR /home/jovyan
+
+# Set up entry point script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+USER root
+RUN chmod +x /usr/local/bin/entrypoint.sh
+USER jovyan
+
+EXPOSE 8888 8080
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"] 

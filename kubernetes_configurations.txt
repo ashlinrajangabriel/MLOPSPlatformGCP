@@ -1,0 +1,122 @@
+Namespace,Resource Type,Name,Labels,Replicas,Container Image,Resource Requests,Resource Limits,Volume Mounts,Service Type,Ports,Additional Configurations
+
+# Platform Namespace
+developer-platform,Namespace,developer-platform,"app.kubernetes.io/part-of=developer-platform",,,,,,,,
+
+# JupyterHub Components
+developer-platform,Deployment,jupyterhub,"app=jupyterhub,component=hub",1,"jupyterhub/k8s-hub:latest","cpu=200m,memory=512Mi","cpu=1,memory=1Gi","config-volume,secret-volume",ClusterIP,"8081/TCP","RBAC enabled, OIDC auth"
+developer-platform,ConfigMap,jupyterhub-config,,,,,,,,,"Hub configuration"
+developer-platform,Secret,hub-secret,,,,,,,,,"OAuth credentials"
+developer-platform,Service,jupyterhub-hub,,,,,,,,8081/TCP,"Internal hub service"
+developer-platform,Ingress,jupyterhub-ingress,,,,,,,,443/HTTPS,"TLS enabled, OIDC auth"
+
+# MLflow Components
+developer-platform,StatefulSet,mlflow,"app.kubernetes.io/name=mlflow",1,"ghcr.io/mlflow/mlflow:latest","cpu=500m,memory=1Gi","cpu=2,memory=4Gi","artifact-volume",ClusterIP,"5000/TCP","Postgres backend, GCS artifacts"
+developer-platform,Service,mlflow,,,,,,,,5000/TCP,"MLflow API endpoint"
+developer-platform,PersistentVolumeClaim,mlflow-artifacts,,,,,,,,,"GCS storage class"
+developer-platform,ConfigMap,mlflow-config,,,,,,,,,"MLflow server config"
+developer-platform,Secret,mlflow-secrets,,,,,,,,,"Database credentials"
+
+# Monitoring Stack
+monitoring,Namespace,monitoring,"app.kubernetes.io/part-of=monitoring",,,,,,,,
+monitoring,Deployment,prometheus,"app=prometheus",1,"prom/prometheus:latest","cpu=500m,memory=2Gi","cpu=1,memory=4Gi","config-volume,rules-volume",ClusterIP,"9090/TCP","Service discovery enabled"
+monitoring,Deployment,grafana,"app=grafana",1,"grafana/grafana:latest","cpu=200m,memory=512Mi","cpu=500m,memory=1Gi","dashboards-volume",ClusterIP,"3000/TCP","Persistent dashboards"
+monitoring,ConfigMap,prometheus-config,,,,,,,,,"Scrape configurations"
+monitoring,ConfigMap,grafana-dashboards,,,,,,,,,"Dashboard definitions"
+monitoring,PersistentVolumeClaim,grafana-storage,,,,,,,,,"Dashboard storage"
+
+# Feature Store Components
+ml-platform,Namespace,ml-platform,"app.kubernetes.io/part-of=ml-platform",,,,,,,,
+ml-platform,Deployment,feature-server,"app=feature-server",2,"feature-store:latest","cpu=1,memory=2Gi","cpu=2,memory=4Gi","cache-volume",ClusterIP,"8666/TCP","Redis cache enabled"
+ml-platform,Service,feature-server,,,,,,,,8666/TCP,"Feature serving endpoint"
+ml-platform,ConfigMap,feature-store-config,,,,,,,,,"Feature definitions"
+ml-platform,Secret,feature-store-secrets,,,,,,,,,"Store credentials"
+
+# Airflow Components
+ml-platform,StatefulSet,airflow-webserver,"app=airflow,component=webserver",1,"apache/airflow:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","dags-volume",ClusterIP,"8080/TCP","DAG scheduling enabled"
+ml-platform,Deployment,airflow-scheduler,"app=airflow,component=scheduler",1,"apache/airflow:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","dags-volume",ClusterIP,,"Celery executor"
+ml-platform,Deployment,airflow-worker,"app=airflow,component=worker",3,"apache/airflow:latest","cpu=1,memory=2Gi","cpu=2,memory=4Gi","dags-volume",ClusterIP,,"Auto-scaling enabled"
+ml-platform,ConfigMap,airflow-config,,,,,,,,,"Airflow configuration"
+ml-platform,Secret,airflow-secrets,,,,,,,,,"Airflow credentials"
+ml-platform,PersistentVolumeClaim,airflow-dags,,,,,,,,,"Shared DAG storage"
+
+# Storage Classes
+,StorageClass,standard-rwo,"storageclass.kubernetes.io/is-default-class=true",,,,,,,,ReadWriteOnce
+,StorageClass,gcsfuse-versioned,,,,,,,,,"ReadWriteMany, versioning"
+
+# RBAC Configurations
+,ClusterRole,jupyter-user,,,,,,,,,"User permissions"
+,ClusterRole,jupyter-admin,,,,,,,,,"Admin permissions"
+,ClusterRoleBinding,jupyter-user-binding,,,,,,,,,"User role binding"
+,ClusterRoleBinding,jupyter-admin-binding,,,,,,,,,"Admin role binding"
+
+# Resource Quotas
+developer-platform,ResourceQuota,developer-quota,,,,"cpu=20,memory=40Gi","cpu=40,memory=80Gi",,,,
+ml-platform,ResourceQuota,ml-platform-quota,,,,"cpu=40,memory=80Gi","cpu=80,memory=160Gi",,,,
+monitoring,ResourceQuota,monitoring-quota,,,,"cpu=10,memory=20Gi","cpu=20,memory=40Gi",,,,
+
+# Cloud Integration Components
+cloud-system,Namespace,cloud-system,"app.kubernetes.io/part-of=cloud-integrations",,,,,,,,
+cloud-system,Deployment,cloud-sql-proxy,"app=cloudsql-proxy",2,"gcr.io/cloudsql-docker/gce-proxy:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","credentials-volume",ClusterIP,"5432/TCP","Cloud SQL connection proxy"
+cloud-system,Deployment,workload-identity,"app=workload-identity",1,"gcr.io/gke-release/workload-identity:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi",None,ClusterIP,,"GKE Workload Identity"
+cloud-system,Deployment,cloud-dns,"app=external-dns",1,"k8s.gcr.io/external-dns/external-dns:latest","cpu=100m,memory=128Mi","cpu=200m,memory=256Mi","config-volume",ClusterIP,,"Cloud DNS integration"
+cloud-system,Deployment,cert-manager,"app=cert-manager",1,"quay.io/jetstack/cert-manager-controller:latest","cpu=100m,memory=512Mi","cpu=200m,memory=1Gi","config-volume",ClusterIP,,"TLS certificate management"
+
+# Cloud Storage Components
+cloud-storage,Namespace,cloud-storage,"app.kubernetes.io/part-of=cloud-storage",,,,,,,,
+cloud-storage,DaemonSet,gcsfuse-driver,"app=gcsfuse",1,"gcr.io/gke-release/gcsfuse:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","plugin-dir",ClusterIP,,"GCS FUSE CSI Driver"
+cloud-storage,Deployment,backup-controller,"app=backup",1,"backup-controller:latest","cpu=200m,memory=512Mi","cpu=500m,memory=1Gi","backup-volume",ClusterIP,,"GCS backup controller"
+
+# Cloud Monitoring Components
+cloud-monitoring,Namespace,cloud-monitoring,"app.kubernetes.io/part-of=cloud-monitoring",,,,,,,,
+cloud-monitoring,DaemonSet,stackdriver-agent,"app=stackdriver",1,"gcr.io/stackdriver-agents/stackdriver-logging-agent:latest","cpu=100m,memory=200Mi","cpu=200m,memory=300Mi","log-volume",ClusterIP,,"Cloud Logging agent"
+cloud-monitoring,Deployment,metrics-collector,"app=metrics",2,"gcr.io/stackdriver-agents/metrics-agent:latest","cpu=200m,memory=400Mi","cpu=400m,memory=800Mi","config-volume",ClusterIP,,"Cloud Monitoring agent"
+
+# Cloud Security Components
+cloud-security,Namespace,cloud-security,"app.kubernetes.io/part-of=cloud-security",,,,,,,,
+cloud-security,Deployment,cloud-armor,"app=armor",2,"cloud-armor-controller:latest","cpu=200m,memory=512Mi","cpu=400m,memory=1Gi","config-volume",ClusterIP,,"Cloud Armor controller"
+cloud-security,Deployment,security-scanner,"app=scanner",1,"security-scanner:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","scan-volume",ClusterIP,,"Container vulnerability scanner"
+cloud-security,DaemonSet,policy-controller,"app=policy",1,"policy-controller:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","policy-volume",ClusterIP,,"GKE Policy Controller"
+
+# Cloud Network Components
+cloud-network,Namespace,cloud-network,"app.kubernetes.io/part-of=cloud-network",,,,,,,,
+cloud-network,Deployment,load-balancer,"app=glb",2,"glb-controller:latest","cpu=200m,memory=512Mi","cpu=400m,memory=1Gi","config-volume",ClusterIP,,"Cloud Load Balancer controller"
+cloud-network,Deployment,network-policy,"app=netpol",1,"network-policy:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","policy-volume",ClusterIP,,"Network Policy controller"
+cloud-network,DaemonSet,vpc-cni,"app=vpc-cni",1,"vpc-cni:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","cni-volume",ClusterIP,,"VPC CNI plugin"
+
+# ML Training Workloads
+ml-training,Namespace,ml-training,"app.kubernetes.io/part-of=ml-training",,,,,,,,
+ml-training,Deployment,training-operator,"app=training-operator",1,"kubeflow/training-operator:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","config-volume",ClusterIP,"8443/TCP","Training CRD operator"
+ml-training,StatefulSet,parameter-server,"app=ps",3,"training/ps:latest","cpu=2,memory=4Gi","cpu=4,memory=8Gi","model-volume",ClusterIP,"2222/TCP","Parameter server"
+ml-training,Deployment,training-worker,"app=worker",4,"training/worker:latest","cpu=4,memory=8Gi,nvidia.com/gpu=1","cpu=8,memory=16Gi,nvidia.com/gpu=1","data-volume",ClusterIP,"2222/TCP","Training worker"
+ml-training,DaemonSet,gpu-device-plugin,"app=gpu-plugin",1,"nvidia/k8s-device-plugin:latest","cpu=100m,memory=256Mi","cpu=200m,memory=512Mi","device-plugin",ClusterIP,,"GPU support"
+
+# ML Serving Workloads
+ml-serving,Namespace,ml-serving,"app.kubernetes.io/part-of=ml-serving",,,,,,,,
+ml-serving,Deployment,inference-server,"app=triton",2,"nvidia/triton:latest","cpu=2,memory=4Gi,nvidia.com/gpu=1","cpu=4,memory=8Gi,nvidia.com/gpu=1","model-repository",ClusterIP,"8000/TCP,8001/TCP,8002/TCP","Triton inference server"
+ml-serving,Deployment,model-monitor,"app=monitor",1,"model-monitor:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","metrics-volume",ClusterIP,"9090/TCP","Model monitoring"
+ml-serving,Deployment,feature-server,"app=feature",2,"feature-server:latest","cpu=1,memory=2Gi","cpu=2,memory=4Gi","feature-store",ClusterIP,"8666/TCP","Online feature serving"
+
+# Development Runtime
+dev-runtime,Namespace,dev-runtime,"app.kubernetes.io/part-of=dev-runtime",,,,,,,,
+dev-runtime,StatefulSet,jupyter-notebook,"app=jupyter",1,"jupyter/datascience:latest","cpu=2,memory=4Gi","cpu=4,memory=8Gi","workspace-volume",ClusterIP,"8888/TCP","Jupyter notebook server"
+dev-runtime,Deployment,vscode-server,"app=vscode",1,"codercom/code-server:latest","cpu=1,memory=2Gi","cpu=2,memory=4Gi","workspace-volume",ClusterIP,"8080/TCP","VS Code server"
+dev-runtime,Deployment,dev-tools,"app=devtools",1,"dev-tools:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","tools-volume",ClusterIP,"3000/TCP","Development tools"
+
+# ML Development Tools
+ml-tools,Namespace,ml-tools,"app.kubernetes.io/part-of=ml-tools",,,,,,,,
+ml-tools,Deployment,tensorboard,"app=tensorboard",1,"tensorflow/tensorboard:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","logs-volume",ClusterIP,"6006/TCP","Training visualization"
+ml-tools,Deployment,notebook-controller,"app=notebook-ctrl",1,"kubeflow/notebook-controller:latest","cpu=200m,memory=512Mi","cpu=500m,memory=1Gi","config-volume",ClusterIP,"8443/TCP","Notebook management"
+ml-tools,Deployment,metadata-server,"app=metadata",1,"kubeflow/metadata:latest","cpu=500m,memory=1Gi","cpu=1,memory=2Gi","metadata-volume",ClusterIP,"8080/TCP","ML metadata tracking"
+
+# Shared Resources
+shared-resources,Namespace,shared-resources,"app.kubernetes.io/part-of=shared-resources",,,,,,,,
+shared-resources,PersistentVolumeClaim,training-data,"storage=training-data",,,,"500Gi",,,"ReadWriteMany","GCS storage class"
+shared-resources,PersistentVolumeClaim,model-repository,"storage=models",,,,"200Gi",,,"ReadWriteMany","Model storage"
+shared-resources,PersistentVolumeClaim,workspace-storage,"storage=workspace",,,,"100Gi",,,"ReadWriteMany","Developer workspace"
+
+# Resource Quotas for ML Workloads
+ml-training,ResourceQuota,training-quota,,,,"cpu=100,memory=200Gi,nvidia.com/gpu=8","cpu=200,memory=400Gi,nvidia.com/gpu=16",,,,
+ml-serving,ResourceQuota,serving-quota,,,,"cpu=50,memory=100Gi,nvidia.com/gpu=4","cpu=100,memory=200Gi,nvidia.com/gpu=8",,,,
+dev-runtime,ResourceQuota,runtime-quota,,,,"cpu=20,memory=40Gi","cpu=40,memory=80Gi",,,,
+

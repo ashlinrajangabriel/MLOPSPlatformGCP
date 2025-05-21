@@ -1,0 +1,67 @@
+Component,Type,CIDR Range,Direction,Protocol,Port,From,To,Purpose
+
+# VPC and Subnet Configuration
+VPC Network,Primary,,,,,,,"Main network infrastructure"
+GKE Subnet,Primary,10.0.0.0/8,,,,,,"Primary subnet for GKE nodes"
+Pod Network,Secondary,172.16.0.0/12,,,,,,"Pod IP range"
+Service Network,Secondary,192.168.0.0/16,,,,,,"Service IP range"
+
+# Development Runtime Rules
+Workspace Ingress,Ingress,,Inbound,TCP,"8080-8089","Load Balancer","Dev Workspaces","Workspace access"
+JupyterHub Runtime,Secondary,172.21.0.0/16,Bidirectional,TCP,8888,"User Browser","Notebook Pods","Notebook access"
+VSCode Runtime,Secondary,172.22.0.0/16,Bidirectional,TCP,8080,"User Browser","IDE Pods","IDE access"
+
+# Pod Network Policies
+JupyterHub Pods,Policy,,Bidirectional,TCP,"8081,8888","OAuth Provider, User Browser","JupyterHub Pods","Hub access and authentication"
+Notebook Pods,Policy,,Bidirectional,TCP,"8888,8080","JupyterHub, User Browser","Notebook Containers","Notebook and IDE access"
+MLflow Pods,Policy,,Bidirectional,TCP,"5000,9090","Notebook Pods, Prometheus","MLflow Server","Experiment tracking and metrics"
+Database Pods,Policy,,Inbound,TCP,5432,"MLflow Pods","PostgreSQL","Database access"
+Storage Access,Policy,,Bidirectional,TCP,443,"All Pods","GCS","Storage access"
+
+# Pod Security Policies
+User Workspaces,Policy,,,,,"User Pods",,"Resource quotas, no privileged"
+System Services,Policy,,,,,"System Pods",,"Limited privileges, read-only root"
+Database Access,Policy,,,,,"MLflow Pods","PostgreSQL","Encrypted connections only"
+
+# ML Platform Network Rules
+MLflow Server,Ingress,,Inbound,TCP,5000,"ML Platform Pods (role=ml-platform)","MLflow Pods (app=mlflow)","MLflow tracking server access"
+MLflow Server,Egress,172.16.0.0/12,Outbound,TCP,443,"MLflow Pods (app=mlflow)","GCS","Artifact storage access"
+
+# Internal Communication
+Internal Network,Internal,,Bidirectional,TCP/UDP/ICMP,All,"10.0.0.0/8","10.0.0.0/8","Internal subnet communication"
+Internal Network,Internal,,Bidirectional,TCP/UDP/ICMP,All,"172.16.0.0/12","172.16.0.0/12","Internal pod communication"
+Internal Network,Internal,,Bidirectional,TCP/UDP/ICMP,All,"192.168.0.0/16","192.168.0.0/16","Internal service communication"
+
+# External Access
+External Access,Ingress,,Inbound,HTTPS,443,"Internet","Ingress Controller","HTTPS web access"
+Cloud NAT,Egress,,Outbound,All,All,"GKE Private Nodes","Internet","External access for private nodes"
+
+# Cloud VPC Configuration
+Cloud VPC,Primary,10.0.0.0/8,Bidirectional,All,All,"VPC Network","VPC Network","Main VPC network"
+GKE Master,Primary,172.16.0.0/28,Bidirectional,TCP,443/8443,"GKE Control Plane","GKE Nodes","Control plane communication"
+Cloud SQL,Primary,10.1.0.0/16,Inbound,TCP,5432,"Application Subnet","Cloud SQL Subnet","Database access"
+
+# Cloud Load Balancer Rules
+GLB Ingress,Ingress,0.0.0.0/0,Inbound,HTTPS,443,"Internet","Load Balancer","HTTPS traffic ingress"
+GLB Health Check,Ingress,35.191.0.0/16,Inbound,HTTP,8080,"Google Health Check","Backend Services","Health check probes"
+GLB Backend,Internal,10.0.0.0/8,Inbound,HTTP,8080,"Load Balancer","Service Endpoints","Backend service traffic"
+
+# Cloud Security Rules
+Cloud Armor,Ingress,0.0.0.0/0,Inbound,HTTPS,443,"Internet","Load Balancer","WAF and DDoS protection"
+VPC SC,Perimeter,,Bidirectional,All,All,"Trusted Services","Protected Resources","Service perimeter control"
+Private Google Access,Egress,199.36.153.4/30,Outbound,HTTPS,443,"Private Instances","Google APIs","Private API access"
+
+# Cloud Interconnect
+VPN Tunnel,Bidirectional,172.20.0.0/16,Bidirectional,All,All,"On-premises Network","Cloud VPC","Site-to-site VPN"
+Cloud Interconnect,Bidirectional,172.21.0.0/16,Bidirectional,All,All,"Partner Network","Cloud VPC","Dedicated interconnect"
+Private Service Connect,Internal,10.2.0.0/16,Bidirectional,TCP,Various,"VPC Network","Google Services","Private service access"
+
+# Cloud DNS Configuration
+Private DNS,Internal,10.3.0.0/16,Bidirectional,UDP/TCP,53,"VPC Network","Cloud DNS","Private DNS resolution"
+DNS Forwarding,Internal,,Bidirectional,UDP/TCP,53,"Cloud DNS","On-premises DNS","DNS forwarding"
+Service Directory,Internal,,Bidirectional,TCP,443,"Service Clients","Service Directory","Service discovery"
+
+# Cloud Monitoring Access
+Monitoring Ingress,Ingress,,Inbound,TCP,9090,"Monitoring Tools","Monitored Resources","Metrics collection"
+Log Export,Egress,,Outbound,TCP,443,"Log Sources","Cloud Logging","Log export"
+Trace Collection,Egress,,Outbound,TCP,443,"Application Services","Cloud Trace","Trace export" 

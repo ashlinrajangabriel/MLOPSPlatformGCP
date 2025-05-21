@@ -1,0 +1,99 @@
+site_name: Developer Platform Documentation
+site_description: Comprehensive documentation for the Developer Platform
+site_author: Your Organization
+repo_url: https://github.com/youorg/developer-platform
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mermaid2
+  - git-revision-date
+  - mkdocstrings:
+      default_handler: python
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: quick-start.md
+    - Installation: installation.md
+    - Configuration: configuration.md
+  - User Guide:
+    - Overview: user-guide/overview.md
+    - Authentication: user-guide/authentication.md
+    - Environments: user-guide/environments.md
+    - Storage: user-guide/storage.md
+  - Developer Guide:
+    - Setup: developer-guide.md
+    - Contributing: contributing.md
+    - Architecture: architecture.md
+    - API Reference: api-reference.md
+  - DevOps Guide:
+    - Infrastructure: devops/infrastructure.md
+    - Deployment: devops/deployment.md
+    - Monitoring: devops/monitoring.md
+    - Security: devops/security.md
+  - Troubleshooting:
+    - Common Issues: troubleshooting/common-issues.md
+    - Debugging: troubleshooting/debugging.md
+    - FAQ: troubleshooting/faq.md
+  - Reference:
+    - CLI Reference: reference/cli.md
+    - API Reference: reference/api.md
+    - Configuration Reference: reference/configuration.md
+  - About:
+    - Release Notes: about/changelog.md
+    - License: about/license.md
+    - Contributing: about/contributing.md 

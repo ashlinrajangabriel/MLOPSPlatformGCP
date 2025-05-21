@@ -1,0 +1,28 @@
+Role Type,Role Name,Service Account/Member,Permissions,Resource Scope,Purpose,Conditions,Audit Config
+
+# Platform Admin Roles
+IAM Role,platform-admin,"platform-admins@domain.com","roles/container.admin,roles/storage.admin,roles/monitoring.admin",Project-wide,"Full platform administration",None,"Log all admin actions"
+
+# Service Accounts
+Service Account,gke-sa@project.iam,"GKE Nodes","roles/container.nodeServiceAccount,roles/storage.objectViewer,roles/monitoring.metricWriter",Cluster-wide,"GKE node operations","Resource labels=environment",None
+Service Account,mlflow-sa@project.iam,"MLflow Pods","roles/storage.objectAdmin,roles/cloudsql.client",Namespace-scoped,"MLflow operations","Namespace=developer-platform","Log data access"
+
+# Kubernetes RBAC
+K8s Role,jupyter-user,"authenticated users","get/list pods,get/list services,create/delete pvcs",Namespace-scoped,"User workspace access","Resource quotas","Log PVC operations"
+K8s Role,jupyter-admin,"platform-admins","full admin access",Cluster-wide,"Platform administration",None,"Log all operations"
+K8s Role,mlflow-role,"mlflow-sa","get/list/watch pods,create/delete pvcs",Namespace-scoped,"MLflow pod management","Namespace=developer-platform","Log PVC changes"
+
+# Workload Identity Bindings
+Identity Binding,gke-wi-binding,"GKE SA to K8s SA",kubernetes.io/gke-metadata-server,Cluster-wide,"Workload identity for GKE",None,None
+Identity Binding,mlflow-wi-binding,"MLflow SA to K8s SA",storage.objectAdmin,Namespace-scoped,"MLflow GCS access","Namespace=developer-platform",None
+
+# Custom Roles
+Custom Role,data-scientist,"data-scientists@domain.com","create/delete notebooks,use MLflow",Namespace-scoped,"ML development access","Resource quotas","Log model operations"
+
+# Cloud IAM Roles
+Cloud Role,network-admin,"network-admins@domain.com","roles/compute.networkAdmin,roles/dns.admin",Project-wide,"Network administration","VPC scope only","Log network changes"
+Cloud Role,storage-admin,"storage-admins@domain.com","roles/storage.admin,roles/cloudsql.admin",Project-wide,"Storage management","Storage resources only","Log storage operations"
+
+# Cloud Service Accounts
+Cloud SA,gke-cluster-sa,"GKE Cluster","roles/container.clusterAdmin,roles/compute.networkUser",Project-wide,"GKE cluster management","GKE resources only","Log cluster operations"
+Cloud SA,cloudsql-sa,"Cloud SQL","roles/cloudsql.client,roles/storage.objectViewer",Project-wide,"Database operations","SQL instances only","Log SQL operations" 
