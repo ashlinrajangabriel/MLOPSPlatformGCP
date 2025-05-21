@@ -1,0 +1,7 @@
+name: standard
+resources:
+  cpu: "2"
+  memory: "4Gi"
+tolerations: []
+nodeSelector:
+  type: standard

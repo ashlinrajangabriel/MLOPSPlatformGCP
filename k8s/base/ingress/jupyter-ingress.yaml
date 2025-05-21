@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyter-ingress
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: jupyterhub
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: developer-platform
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/instance: jupyter
+    environment: ${ENV}
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Add monitoring annotations
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "10254"
+spec:
+  tls:
+  - hosts:
+    - jupyter.${DOMAIN}
+    secretName: jupyter-tls
+  rules:
+  - host: jupyter.${DOMAIN}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jupyterhub
+            port:
+              number: 8000 

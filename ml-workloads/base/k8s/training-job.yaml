@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {usecase}-training-{run_id}
+  labels:
+    app: ml-training
+    usecase: {usecase}
+spec:
+  backoffLimit: 0  # Do not retry on failure for spot instances
+  template:
+    metadata:
+      labels:
+        app: ml-training
+        usecase: {usecase}
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        cloud.google.com/gke-spot: "true"  # Use spot instances
+      tolerations:
+        - key: "cloud.google.com/gke-spot"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      containers:
+      - name: training
+        image: {image}
+        command: ["./entrypoint.sh"]
+        args: ["train", "--config", "/config/training.yaml"]
+        resources:
+          requests:
+            cpu: {cpu_request}
+            memory: {memory_request}
+            nvidia.com/gpu: {num_gpus}
+          limits:
+            cpu: {cpu_limit}
+            memory: {memory_limit}
+            nvidia.com/gpu: {num_gpus}
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: {mlflow_uri}
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: gcp-credentials
+          mountPath: /var/secrets/google
+          readOnly: true
+        - name: checkpoints
+          mountPath: /checkpoints
+      volumes:
+      - name: config
+        configMap:
+          name: {usecase}-training-config
+      - name: gcp-credentials
+        secret:
+          secretName: gcp-sa-key
+      - name: checkpoints
+        persistentVolumeClaim:
+          claimName: {usecase}-checkpoints 

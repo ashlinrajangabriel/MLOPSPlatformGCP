@@ -1,0 +1,48 @@
+# Data paths
+data:
+  source_path: "gs://my-bucket/raw/data.csv"
+  train_path: "gs://my-bucket/processed/train.parquet"
+  val_path: "gs://my-bucket/processed/val.parquet"
+  test_path: "gs://my-bucket/processed/test.parquet"
+  target_column: "target"
+
+# Preprocessing settings
+preprocessing:
+  # Data splitting
+  test_size: 0.2
+  validation_size: 0.2
+  random_state: 42
+  
+  # Missing value handling
+  fill_values:
+    numeric_column1: 0
+    numeric_column2: -1
+    categorical_column1: "unknown"
+  
+  # Outlier removal
+  remove_outliers: true
+  outlier_columns:
+    - numeric_column1
+    - numeric_column2
+  
+  # Feature engineering
+  scale_features: true
+  feature_interactions: true
+  interaction_pairs:
+    - [feature1, feature2]
+    - [feature3, feature4]
+  
+  polynomial_features: true
+  polynomial_columns:
+    - feature1
+    - feature2
+  
+  categorical_columns:
+    - category1
+    - category2
+
+# MLflow configuration
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "data_preprocessing"
+  run_name: "preprocessing_run" 

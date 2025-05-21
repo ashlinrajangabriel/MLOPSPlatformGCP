@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vscode
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: vscode
+    app.kubernetes.io/part-of: developer-platform
+spec:
+  template:
+    spec:
+      containers:
+      - name: vscode
+        env:
+        - name: MLFLOW_TRACKING_URI
+          valueFrom:
+            configMapKeyRef:
+              name: environment-config
+              key: MLFLOW_TRACKING_URI
+        - name: MLFLOW_TRACKING_INSECURE_TLS
+          value: "false"
+        volumeMounts:
+        - name: python-packages
+          mountPath: /usr/local/lib/python3.9/site-packages
+      initContainers:
+      - name: install-mlflow
+        image: python:3.9
+        command: ['pip', 'install']
+        args: ['mlflow>=2.10.2', 'google-cloud-storage>=2.14.0']
+        volumeMounts:
+        - name: python-packages
+          mountPath: /usr/local/lib/python3.9/site-packages
+      volumes:
+      - name: python-packages
+        emptyDir: {} 

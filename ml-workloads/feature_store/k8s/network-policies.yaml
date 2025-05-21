@@ -1,0 +1,134 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: feature-server-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: feature-server
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from ML workload pods
+    - podSelector:
+        matchLabels:
+          role: ml-workload
+    # Allow traffic from specific namespaces
+    - namespaceSelector:
+        matchLabels:
+          purpose: ml-platform
+    # Allow monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8666
+    - protocol: TCP
+      port: 9090  # Prometheus metrics
+  egress:
+  - to:
+    # Allow access to Cloud Datastore
+    - ipBlock:
+        cidr: 10.0.0.0/8
+    # Allow access to GCS
+    - ipBlock:
+        cidr: 172.16.0.0/12
+    # Allow MLflow tracking
+    - podSelector:
+        matchLabels:
+          app: mlflow
+    ports:
+    - protocol: TCP
+      port: 443  # GCP services
+    - protocol: TCP
+      port: 5000  # MLflow
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: airflow-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: airflow
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from ML platform components
+    - podSelector:
+        matchLabels:
+          role: ml-platform
+    # Allow monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 8080  # Airflow webserver
+    - protocol: TCP
+      port: 9090  # Prometheus metrics
+  egress:
+  - to:
+    # Allow access to feature server
+    - podSelector:
+        matchLabels:
+          app: feature-server
+    # Allow access to GCS and Cloud Datastore
+    - ipBlock:
+        cidr: 10.0.0.0/8
+    - ipBlock:
+        cidr: 172.16.0.0/12
+    # Allow MLflow tracking
+    - podSelector:
+        matchLabels:
+          app: mlflow
+    ports:
+    - protocol: TCP
+      port: 443  # GCP services
+    - protocol: TCP
+      port: 8666  # Feature server
+    - protocol: TCP
+      port: 5000  # MLflow
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mlflow-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: mlflow
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    # Allow traffic from ML platform components
+    - podSelector:
+        matchLabels:
+          role: ml-platform
+    # Allow monitoring
+    - podSelector:
+        matchLabels:
+          app: prometheus
+    ports:
+    - protocol: TCP
+      port: 5000  # MLflow server
+    - protocol: TCP
+      port: 9090  # Prometheus metrics
+  egress:
+  - to:
+    # Allow access to GCS
+    - ipBlock:
+        cidr: 172.16.0.0/12
+    ports:
+    - protocol: TCP
+      port: 443  # GCS 

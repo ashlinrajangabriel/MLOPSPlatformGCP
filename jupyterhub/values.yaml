@@ -1,0 +1,102 @@
+hub:
+  config:
+    JupyterHub:
+      admin_users:
+        - admin
+      authenticator_class: generic-oauth
+    Authenticator:
+      admin_users:
+        - admin
+      allowed_users:
+        - user1
+        - user2
+    KubeSpawner:
+      profile_list:
+        - display_name: "Standard Environment"
+          description: "Standard development environment with VSCode and Jupyter"
+          kubespawner_override:
+            image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter:latest
+            node_selector:
+              cloud.google.com/gke-nodepool: standard
+            cpu_limit: 2
+            cpu_guarantee: 1
+            mem_limit: "8G"
+            mem_guarantee: "4G"
+        - display_name: "High Memory Environment"
+          description: "Development environment with extra memory"
+          kubespawner_override:
+            image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter:latest
+            node_selector:
+              cloud.google.com/gke-nodepool: highmem
+            cpu_limit: 4
+            cpu_guarantee: 2
+            mem_limit: "16G"
+            mem_guarantee: "8G"
+        - display_name: "ML/GPU Environment"
+          description: "Machine learning environment with GPU support"
+          kubespawner_override:
+            image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter-gpu:latest
+            node_selector:
+              cloud.google.com/gke-nodepool: gpu
+            extra_resource_limits:
+              nvidia.com/gpu: "1"
+            cpu_limit: 8
+            cpu_guarantee: 4
+            mem_limit: "32G"
+            mem_guarantee: "16G"
+
+  serviceAccount:
+    annotations:
+      iam.gke.io/gcp-service-account: jupyterhub-sa@PROJECT_ID.iam.gserviceaccount.com
+
+singleuser:
+  memory:
+    guarantee: 2G
+    limit: 4G
+  cpu:
+    guarantee: 1
+    limit: 2
+  extraNodeAffinity:
+    matchNodeSelector:
+      type: standard
+  storage:
+    type: dynamic
+    capacity: 10Gi
+    dynamic:
+      storageClass: standard
+      pvcNameTemplate: claim-{username}
+      volumeNameTemplate: volume-{username}
+  extraEnv:
+    JUPYTER_ENABLE_LAB: "yes"
+    GRANT_SUDO: "yes"
+  uid: 1000
+  fsGid: 100
+
+prePuller:
+  hook:
+    enabled: true
+
+proxy:
+  secretToken: "REPLACE_WITH_SECURE_TOKEN"
+  chp:
+    extraCommandLineFlags:
+      - "--no-include-prefix"
+  service:
+    type: ClusterIP
+  https:
+    enabled: true
+    type: secret
+    secret:
+      name: jupyterhub-tls
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - jupyter.example.com
+  tls:
+    - secretName: jupyterhub-tls
+      hosts:
+        - jupyter.example.com

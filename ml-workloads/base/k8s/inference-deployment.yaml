@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {usecase}-inference-{version}
+  labels:
+    app: ml-inference
+    usecase: {usecase}
+    version: {version}
+spec:
+  replicas: {replicas}
+  selector:
+    matchLabels:
+      app: ml-inference
+      usecase: {usecase}
+      version: {version}
+  template:
+    metadata:
+      labels:
+        app: ml-inference
+        usecase: {usecase}
+        version: {version}
+    spec:
+      containers:
+      - name: inference
+        image: {image}
+        command: ["./entrypoint.sh"]
+        args: ["serve", "--mode", "{mode}", "--config", "/config/inference.yaml", "--port", "8000"]
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: {cpu_request}
+            memory: {memory_request}
+            nvidia.com/gpu: {num_gpus}
+          limits:
+            cpu: {cpu_limit}
+            memory: {memory_limit}
+            nvidia.com/gpu: {num_gpus}
+        env:
+        - name: MLFLOW_TRACKING_URI
+          value: {mlflow_uri}
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: gcp-credentials
+          mountPath: /var/secrets/google
+          readOnly: true
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: {usecase}-inference-config
+      - name: gcp-credentials
+        secret:
+          secretName: gcp-sa-key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {usecase}-inference
+  labels:
+    app: ml-inference
+    usecase: {usecase}
+spec:
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: ml-inference
+    usecase: {usecase}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {usecase}-inference
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/canary: "{is_canary}"
+    nginx.ingress.kubernetes.io/canary-weight: "{canary_weight}"
+spec:
+  rules:
+  - host: {hostname}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {usecase}-inference
+            port:
+              number: 80
+</rewritten_file> 

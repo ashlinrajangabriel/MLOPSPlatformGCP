@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vscode-jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vscode-jupyter
+  template:
+    metadata:
+      labels:
+        app: vscode-jupyter
+    spec:
+      containers:
+      - name: vscode
+        image: gcr.io/your-project/vscode:latest
+        ports:
+        - containerPort: 8080
+      - name: jupyter
+        image: gcr.io/your-project/jupyter:latest
+        ports:
+        - containerPort: 8888

@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feature-server-config
+data:
+  FEAST_FEATURE_SERVER_TYPE: "python"
+  FEAST_FEATURE_SERVER_PORT: "8666"
+  GCP_PROJECT_ID: "${GCP_PROJECT_ID}"
+  GCS_BUCKET_NAME: "${GCS_BUCKET_NAME}"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feature-server
+  labels:
+    app: feature-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: feature-server
+  template:
+    metadata:
+      labels:
+        app: feature-server
+    spec:
+      serviceAccountName: feature-server-sa
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: feature-server
+        image: ml-workloads/feature-server:latest
+        ports:
+        - containerPort: 8666
+        envFrom:
+        - configMapRef:
+            name: feature-server-config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8666
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8666
+          initialDelaySeconds: 60
+          periodSeconds: 20
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feature-server
+spec:
+  selector:
+    app: feature-server
+  ports:
+  - port: 8666
+    targetPort: 8666
+  type: ClusterIP 

@@ -1,0 +1,38 @@
+# ConfigMap containing JupyterHub's OIDC configuration for Google authentication
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyterhub-oidc-config
+  namespace: developer-platform
+data:
+  # JupyterHub configuration for Google OAuth authentication
+  jupyterhub_config.py: |
+    # Use Google's OAuth authenticator class
+    c.JupyterHub.authenticator_class = 'oauthenticator.GoogleOAuthenticator'
+    
+    # OAuth callback URL - must match the one configured in Google Cloud Console
+    c.GoogleOAuthenticator.oauth_callback_url = 'https://jupyter.${DOMAIN}/hub/oauth_callback'
+    
+    # OAuth client credentials from Google Cloud Console
+    c.GoogleOAuthenticator.client_id = '${OAUTH_CLIENT_ID}'
+    c.GoogleOAuthenticator.client_secret = '${OAUTH_CLIENT_SECRET}'
+    
+    # Restrict access to specific domain(s)
+    c.GoogleOAuthenticator.hosted_domain = ['${DOMAIN}']
+    
+    # Display name for the login button
+    c.GoogleOAuthenticator.login_service = 'Google'
+    
+    # Google Groups that are allowed to access the platform
+    c.GoogleOAuthenticator.allowed_google_groups = ['${USER_GROUP}']
+    
+    # Google Groups that have admin privileges
+    c.GoogleOAuthenticator.admin_google_groups = ['${ADMIN_GROUP}']
+    
+    # Required OAuth scopes for authentication and group membership verification
+    c.GoogleOAuthenticator.scope = [
+        'openid',           # Basic OpenID Connect scope
+        'email',           # User's email address
+        'profile',         # User's profile information
+        'https://www.googleapis.com/auth/groups',  # Group membership verification
+    ] 

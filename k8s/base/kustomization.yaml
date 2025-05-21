@@ -1,0 +1,40 @@
+# Base Kustomize configuration for the developer platform
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Target namespace for all resources
+namespace: developer-platform
+
+# List of resources to include
+resources:
+- namespace.yaml          # Namespace definition
+- jupyterhub/            # JupyterHub components
+- monitoring/            # Monitoring stack (Prometheus/Grafana)
+- auth/oidc-config.yaml  # OIDC authentication configuration
+- auth/rbac.yaml         # RBAC roles and bindings
+- ingress/cert-issuer.yaml
+- ingress/jupyter-ingress.yaml
+- ingress/grafana-ingress.yaml
+- mlflow/deployment.yaml  # MLflow tracking server
+- mlflow/database.yaml    # MLflow database
+- mlflow/service.yaml     # MLflow service and ingress
+- mlflow/secrets.yaml     # MLflow secrets
+- mlflow/database-backup.yaml  # Database backup
+- mlflow/artifact-lifecycle.yaml  # GCS lifecycle policies
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/part-of: developer-platform
+
+# Generate ConfigMap from environment file
+configMapGenerator:
+- name: auth-config      # Non-sensitive auth configuration
+  envs:
+  - auth.env            # Contains domain and group names
+
+# Generate Secret from environment file
+secretGenerator:
+- name: oauth-secrets   # Sensitive OAuth credentials
+  envs:
+  - oauth.env          # Contains client ID and secret
+  type: Opaque        # Standard Kubernetes secret type

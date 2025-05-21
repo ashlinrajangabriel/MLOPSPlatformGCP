@@ -1,0 +1,12 @@
+name: ml-gpu-t4
+resources:
+  cpu: "4"
+  memory: "8Gi"
+  gpu: "1"
+tolerations:
+  - key: "gpu"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+nodeSelector:
+  cloud.google.com/gke-accelerator: "nvidia-tesla-t4"

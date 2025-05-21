@@ -1,0 +1,63 @@
+# Regular user role definition - provides basic access to personal resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jupyter-user
+rules:
+  # Allow users to view and manage their own resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  # Allow users to execute commands in their pods
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+---
+# Administrator role definition - provides full platform management capabilities
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: jupyter-admin
+rules:
+  # Full access to core Kubernetes resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "persistentvolumeclaims", "services", "configmaps", "secrets"]
+    verbs: ["*"]
+  # Allow admins to execute commands in any pod
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  # Full access to deployment and statefulset management
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["*"]
+---
+# Bind regular user permissions to the user group
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jupyter-user-binding
+subjects:
+  # Map to Google Workspace group for regular users
+  - kind: Group
+    name: ${USER_GROUP}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: jupyter-user
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind administrator permissions to the admin group
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jupyter-admin-binding
+subjects:
+  # Map to Google Workspace group for administrators
+  - kind: Group
+    name: ${ADMIN_GROUP}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: jupyter-admin
+  apiGroup: rbac.authorization.k8s.io 

@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 45.0.0
+    chart: kube-prometheus-stack
+    helm:
+      values: |
+        grafana:
+          enabled: true
+          ingress:
+            enabled: true
+            annotations:
+              kubernetes.io/ingress.class: nginx
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+            hosts:
+              - grafana.example.com
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.example.com
+          persistence:
+            enabled: true
+            size: 10Gi
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: default
+                  orgId: 1
+                  folder: ''
+                  type: file
+                  disableDeletion: false
+                  editable: true
+                  options:
+                    path: /var/lib/grafana/dashboards/default
+
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+            serviceMonitorSelector:
+              matchLabels:
+                app.kubernetes.io/part-of: developer-platform
+
+        alertmanager:
+          enabled: true
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['job']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: 'null'
+              routes:
+                - match:
+                    alertname: Watchdog
+                  receiver: 'null'
+            receivers:
+              - name: 'null'
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true 

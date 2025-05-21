@@ -1,0 +1,64 @@
+# Model configuration
+model:
+  name: "pytorch_model"
+  version: "latest"  # or specific version number
+
+# Service configuration
+service:
+  max_workers: 4
+  batch_size: 32
+  timeout: 30  # seconds
+  max_queue_size: 100
+
+# Resource limits
+resources:
+  cpu_limit: "2"
+  memory_limit: "4Gi"
+  gpu_enabled: true
+  gpu_limit: 1
+
+# Preprocessing configuration
+preprocessing:
+  input_shape: [3, 224, 224]  # Example for image input
+  normalize: true
+  mean: [0.485, 0.456, 0.406]  # ImageNet normalization
+  std: [0.229, 0.224, 0.225]
+
+# Postprocessing configuration
+postprocessing:
+  confidence_threshold: 0.5
+  top_k: 5
+  class_labels_path: "gs://my-bucket/models/class_labels.json"
+
+# MLflow configuration
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  registry_uri: "http://mlflow:5000"
+
+# Monitoring configuration
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  log_predictions: true
+  prediction_log_path: "gs://my-bucket/prediction_logs/"
+
+# Batch inference configuration
+batch:
+  input_path: "gs://my-bucket/batch_input/"
+  output_path: "gs://my-bucket/batch_output/"
+  schedule: "0 0 * * *"  # Daily at midnight
+  max_retries: 3
+  timeout: 3600  # 1 hour
+
+# Canary deployment
+canary:
+  enabled: true
+  initial_weight: 10  # Percentage
+  increment: 10
+  interval: 300  # 5 minutes
+  max_errors: 5
+  metrics:
+    - name: "latency_p95"
+      threshold: 100  # ms
+    - name: "error_rate"
+      threshold: 0.01  # 1% 

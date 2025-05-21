@@ -1,0 +1,77 @@
+# OR-Tools Configuration
+
+# Solver settings
+solver:
+  type: "cp_sat"  # Options: cp_sat, mip
+  time_limit: 60  # seconds per solving iteration
+  num_workers: 4  # Number of parallel workers
+  minimize: true  # true for minimization, false for maximization
+
+# Timeout configuration
+timeouts:
+  total_runtime: 3600  # Maximum total runtime in seconds (1 hour)
+  iteration: 300      # Maximum time per iteration (5 minutes)
+  improvement: 600    # Maximum time without improvement (10 minutes)
+  solver_init: 30     # Maximum time for solver initialization
+  checkpoint: 60      # Maximum time for checkpoint operations
+  termination_grace: 30  # Grace period for cleanup on timeout
+
+# Distributed solving
+distributed:
+  enabled: true
+  backend: "nccl"  # Communication backend for distributed solving
+  init_method: "tcp://localhost:23456"
+  world_size: 4
+  rank: 0
+
+# Spot instance configuration
+spot:
+  enabled: true
+  max_price: 0.5  # Maximum price per hour
+  termination_period: 300  # Grace period in seconds
+  checkpointing:
+    enabled: true
+    frequency: 10  # Save checkpoint every N iterations
+    gcs_bucket: "my-checkpoints"
+    gcs_path: "or_tools/{run_id}/checkpoints"
+    max_to_keep: 5  # Maximum number of checkpoints to keep
+
+# Problem-specific settings
+routing:
+  num_vehicles: 10
+  capacity: 100
+  depot: 0
+  distance_matrix_path: "gs://my-bucket/distances.npy"
+  demands_path: "gs://my-bucket/demands.npy"
+  time_windows_path: "gs://my-bucket/time_windows.npy"
+
+scheduling:
+  num_machines: 5
+  processing_times_path: "gs://my-bucket/processing_times.npy"
+  due_dates_path: "gs://my-bucket/due_dates.npy"
+  release_dates_path: "gs://my-bucket/release_dates.npy"
+  priorities_path: "gs://my-bucket/priorities.npy"
+
+# MLflow tracking
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "or_tools_optimization"
+  run_name: "parallel_solving"
+  metrics:
+    log_frequency: 10  # Log metrics every N iterations
+  tags:
+    problem_type: "routing"  # or "scheduling"
+    solver_type: "cp_sat"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "optimization.log"
+
+# Resource limits
+resources:
+  cpu_limit: "4"
+  memory_limit: "8Gi"
+  use_gpu: false  # OR-Tools doesn't use GPU acceleration
+  spot_instance: true  # Use spot instances for computation 

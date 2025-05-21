@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mlflow-db-backup
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: mlflow-db
+    app.kubernetes.io/component: backup
+    app.kubernetes.io/part-of: developer-platform
+spec:
+  schedule: "0 1 * * *"  # Daily at 1 AM
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Dump PostgreSQL database
+              PGPASSWORD=$POSTGRES_PASSWORD pg_dump -h mlflow-db -U $POSTGRES_USER $POSTGRES_DB > /tmp/mlflow-backup.sql
+              
+              # Upload to GCS with timestamp
+              TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+              gsutil cp /tmp/mlflow-backup.sql gs://${BUCKET_NAME}/mlflow/backups/db-$TIMESTAMP.sql
+              
+              # Cleanup old backups (keep last 30 days)
+              gsutil rm `gsutil ls gs://${BUCKET_NAME}/mlflow/backups/db-*.sql | sort | head -n -30` || true
+            env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mlflow-db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mlflow-db-credentials
+                  key: password
+            - name: POSTGRES_DB
+              value: mlflow
+            volumeMounts:
+            - name: gcp-credentials
+              mountPath: /var/secrets/google
+              readOnly: true
+            resources:
+              requests:
+                cpu: "200m"
+                memory: "256Mi"
+              limits:
+                cpu: "500m"
+                memory: "512Mi"
+          volumes:
+          - name: gcp-credentials
+            secret:
+              secretName: mlflow-gcp-credentials
+          restartPolicy: OnFailure 

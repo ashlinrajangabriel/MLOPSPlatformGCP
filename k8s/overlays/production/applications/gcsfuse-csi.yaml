@@ -1,0 +1,64 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gcsfuse-csi
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://raw.githubusercontent.com/GoogleCloudPlatform/gcs-fuse-csi-driver/master/deploy/helm
+    targetRevision: v1.0.0
+    chart: gcs-fuse-csi-driver
+    helm:
+      values: |
+        storageClasses:
+          - name: gcsfuse-versioned
+            mountOptions:
+              - implicit-dirs
+              - uid=1000
+              - gid=100
+              - file-mode=0644
+              - dir-mode=0755
+              - enable-versioning
+              - version-format=time
+              - version-prefix=.versions/
+            parameters:
+              bucketName: ${PROJECT_ID}-user-storage
+              enableVersioning: "true"
+              enableBucketLifecycle: "true"
+              lifecycleRules: |
+                - action:
+                    type: SetStorageClass
+                    storageClass: NEARLINE
+                  condition:
+                    age: 30
+                    matchesStorageClass: ["STANDARD"]
+                - action:
+                    type: SetStorageClass
+                    storageClass: COLDLINE
+                  condition:
+                    age: 90
+                    matchesStorageClass: ["NEARLINE"]
+                - action:
+                    type: Delete
+                  condition:
+                    age: 365
+                    matchesStorageClass: ["COLDLINE"]
+                    isLive: false
+              retentionPolicy:
+                retentionPeriod: "2592000s"  # 30 days minimum retention
+              objectVersioning:
+                enabled: true
+                maxVersions: 10
+                versioningFormat: "time"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gcs-fuse-csi-driver
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true 

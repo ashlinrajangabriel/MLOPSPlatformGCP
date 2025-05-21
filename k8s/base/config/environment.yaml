@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environment-config
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: environment-config
+    app.kubernetes.io/part-of: developer-platform
+data:
+  MLFLOW_TRACKING_URI: https://mlflow.${DOMAIN}
+  JUPYTER_ENABLE_LAB: "true"
+  JUPYTER_CONFIG_DIR: /etc/jupyter
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyter-shared-config
+  namespace: developer-platform
+data:
+  jupyter_notebook_config.py: |
+    # MLflow integration
+    c.NotebookApp.extra_template_paths = ['/etc/jupyter/templates']
+    
+    # Add MLflow example to the launcher
+    c.LabApp.extra_labextensions = ['@jupyter-widgets/jupyterlab-manager']
+    
+  mlflow_example.ipynb: |
+    {
+     "cells": [
+      {
+       "cell_type": "markdown",
+       "metadata": {},
+       "source": [
+        "# MLflow Quick Start\n",
+        "\n",
+        "This notebook demonstrates how to use MLflow in this environment."
+       ]
+      },
+      {
+       "cell_type": "code",
+       "execution_count": null,
+       "metadata": {},
+       "source": [
+        "import mlflow\n",
+        "\n",
+        "# MLflow is pre-configured - no setup needed!\n",
+        "print(f\"MLflow tracking URI: {mlflow.get_tracking_uri()}\")\n",
+        "\n",
+        "# Create an experiment\n",
+        "mlflow.set_experiment('quickstart')\n",
+        "\n",
+        "# Log some metrics\n",
+        "with mlflow.start_run():\n",
+        "    mlflow.log_param('param1', 5)\n",
+        "    mlflow.log_metric('metric1', 0.95)\n",
+        "\n",
+        "print(\"Done! Check the MLflow UI to see your experiment.\")"
+       ]
+      }
+     ],
+     "metadata": {
+      "kernelspec": {
+       "display_name": "Python 3",
+       "language": "python",
+       "name": "python3"
+      }
+     },
+     "nbformat": 4,
+     "nbformat_minor": 4
+    } 

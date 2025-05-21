@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vscode-jupyter-service
+spec:
+  selector:
+    app: vscode-jupyter
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

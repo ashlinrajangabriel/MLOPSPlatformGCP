@@ -1,0 +1,8 @@
+bases:
+  - ../../base
+
+resources:
+  - applications/gcsfuse-csi.yaml
+  - applications/jupyterhub.yaml
+
+patchesStrategicMerge: []

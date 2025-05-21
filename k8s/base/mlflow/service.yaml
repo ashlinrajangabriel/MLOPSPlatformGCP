@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/component: tracking-server
+    app.kubernetes.io/part-of: developer-platform
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+    name: http
+  selector:
+    app.kubernetes.io/name: mlflow
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mlflow-ingress
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: developer-platform
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Add auth annotation to use the same auth as JupyterHub
+    nginx.ingress.kubernetes.io/auth-url: "https://jupyter.${DOMAIN}/hub/api/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://jupyter.${DOMAIN}/hub/login"
+spec:
+  tls:
+  - hosts:
+    - mlflow.${DOMAIN}
+    secretName: mlflow-tls
+  rules:
+  - host: mlflow.${DOMAIN}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mlflow
+            port:
+              name: http 

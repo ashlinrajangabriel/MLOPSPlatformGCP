@@ -1,0 +1,65 @@
+# Training Configuration
+
+# Model parameters
+model:
+  name: "pytorch_model"
+  type: "resnet50"  # Example model type
+  pretrained: true
+  num_classes: 10
+
+# Training parameters
+training:
+  distributed: true  # Enable distributed training
+  num_epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  optimizer: "adam"
+  loss_function: "cross_entropy"
+  early_stopping:
+    patience: 10
+    min_delta: 0.001
+  checkpointing:
+    enabled: true
+    frequency: 5  # Save every N epochs
+    gcs_bucket: "my-checkpoints"
+    gcs_path: "model/{run_id}/checkpoints"
+
+# Data configuration
+data:
+  train_path: "gs://my-bucket/train"
+  val_path: "gs://my-bucket/val"
+  test_path: "gs://my-bucket/test"
+  num_workers: 4
+  pin_memory: true
+
+# Compute configuration
+compute:
+  instance_type: "n1-standard-8"
+  accelerator: "nvidia-tesla-t4"
+  num_gpus: 1
+  use_spot: true  # Use spot instances
+  spot_config:
+    max_price: 0.5  # Maximum price per hour
+    termination_period: 300  # Grace period in seconds
+
+# MLflow configuration
+mlflow:
+  tracking_uri: "http://mlflow:5000"
+  experiment_name: "my_experiment"
+  run_name: "training_run"
+  tags:
+    environment: "development"
+    version: "1.0.0"
+  metrics:
+    log_frequency: 100  # Log metrics every N steps
+  custom_metrics:
+    - name: "f1_score"
+      frequency: "epoch"
+    - name: "confusion_matrix"
+      frequency: "epoch"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "training.log" 

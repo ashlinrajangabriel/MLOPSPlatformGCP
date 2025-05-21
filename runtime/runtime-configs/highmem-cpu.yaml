@@ -1,0 +1,7 @@
+name: highmem-cpu
+resources:
+  cpu: "8"
+  memory: "32Gi"
+tolerations: []
+nodeSelector:
+  type: highmem

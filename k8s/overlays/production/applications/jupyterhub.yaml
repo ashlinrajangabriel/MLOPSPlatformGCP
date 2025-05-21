@@ -1,0 +1,111 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jupyterhub
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://jupyterhub.github.io/helm-chart/
+    targetRevision: 3.0.0
+    chart: jupyterhub
+    helm:
+      values: |
+        hub:
+          config:
+            JupyterHub:
+              authenticator_class: generic-oauth
+            KubeSpawner:
+              profile_list:
+                - display_name: "Standard Environment"
+                  description: "Standard development environment with VSCode and Jupyter"
+                  kubespawner_override:
+                    image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter:latest
+                    node_selector:
+                      cloud.google.com/gke-nodepool: standard
+                    cpu_limit: 2
+                    cpu_guarantee: 1
+                    mem_limit: "8G"
+                    mem_guarantee: "4G"
+                    storage:
+                      type: dynamic
+                      capacity: 10Gi
+                      dynamic:
+                        storageClass: gcsfuse-versioned
+                        pvcNameTemplate: claim-{username}
+                        volumeNameTemplate: volume-{username}
+                    extraEnv:
+                      GCS_VERSIONING_ENABLED: "true"
+                - display_name: "High Memory Environment"
+                  description: "Development environment with extra memory"
+                  kubespawner_override:
+                    image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter:latest
+                    node_selector:
+                      cloud.google.com/gke-nodepool: highmem
+                    cpu_limit: 4
+                    cpu_guarantee: 2
+                    mem_limit: "16G"
+                    mem_guarantee: "8G"
+                - display_name: "ML/GPU Environment"
+                  description: "Machine learning environment with GPU support"
+                  kubespawner_override:
+                    image: gcr.io/PROJECT_ID/developer-platform/vscode-jupyter-gpu:latest
+                    node_selector:
+                      cloud.google.com/gke-nodepool: gpu
+                    extra_resource_limits:
+                      nvidia.com/gpu: "1"
+                    cpu_limit: 8
+                    cpu_guarantee: 4
+                    mem_limit: "32G"
+                    mem_guarantee: "16G"
+
+          serviceAccount:
+            annotations:
+              iam.gke.io/gcp-service-account: jupyterhub-sa@PROJECT_ID.iam.gserviceaccount.com
+
+        singleuser:
+          storage:
+            type: dynamic
+            capacity: 10Gi
+            dynamic:
+              storageClass: gcsfuse-versioned
+              pvcNameTemplate: claim-{username}
+              volumeNameTemplate: volume-{username}
+          extraEnv:
+            JUPYTER_ENABLE_LAB: "yes"
+            GRANT_SUDO: "yes"
+            GCS_VERSIONING_ENABLED: "true"
+          uid: 1000
+          fsGid: 100
+
+        proxy:
+          service:
+            type: ClusterIP
+          https:
+            enabled: true
+            type: secret
+            secret:
+              name: jupyterhub-tls
+
+        ingress:
+          enabled: true
+          annotations:
+            kubernetes.io/ingress.class: nginx
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+          hosts:
+            - jupyter.example.com
+          tls:
+            - secretName: jupyterhub-tls
+              hosts:
+                - jupyter.example.com
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: developer-platform
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true 

@@ -1,0 +1,32 @@
+apiVersion: storage.cnrm.cloud.google.com/v1
+kind: StorageBucket
+metadata:
+  name: ${BUCKET_NAME}
+  namespace: developer-platform
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/component: artifact-store
+    app.kubernetes.io/part-of: developer-platform
+spec:
+  versioning:
+    enabled: true
+  lifecycleRule:
+    - action:
+        type: SetStorageClass
+        storageClass: NEARLINE
+      condition:
+        age: 30  # Move to Nearline after 30 days
+        matchesStorageClass: ["STANDARD"]
+    - action:
+        type: SetStorageClass
+        storageClass: COLDLINE
+      condition:
+        age: 90  # Move to Coldline after 90 days
+        matchesStorageClass: ["NEARLINE"]
+    - action:
+        type: Delete
+      condition:
+        age: 365  # Delete after 1 year
+        matchesStorageClass: ["COLDLINE"]
+  location: ${REGION}
+  uniformBucketLevelAccess: true 

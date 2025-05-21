@@ -1,0 +1,29 @@
+project: ml_workloads
+registry: gs://ml-workloads-registry/registry.db
+provider: gcp
+
+offline_store:
+  type: file
+  file_format: parquet
+  file_url_scheme: gs
+  bucket_name: ${GCS_BUCKET_NAME}
+  base_path: features/offline
+
+online_store:
+  type: datastore
+  project_id: ${GCP_PROJECT_ID}
+  namespace: ml_workloads
+
+feature_server:
+  type: python
+  enabled: true
+  port: 8666
+  
+security:
+  authentication:
+    enabled: true
+    provider: google
+  encryption:
+    enabled: true
+    type: google_cmek
+    key_id: ${KMS_KEY_ID} 
